@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Calorie Coach BG",
+    "slug": "calorie-coach-bg",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#f4efe6"
+    },
+    "android": {
+      "package": "com.dimitargeorgiev.caloriecoachbg"
+    }
+  }
+}
