@@ -2,21 +2,26 @@ import { StyleSheet, Text, View } from "react-native";
 import { AppShell } from "../components/AppShell";
 import { GlassCard } from "../components/GlassCard";
 import { MetricCard } from "../components/MetricCard";
-import type { CalculatedPlan, Profile } from "../types";
-import { activityLabels, formatCalories, goalLabels } from "../utils/calorie";
+import type { CalculatedPlan, DiaryEntry, Profile } from "../types";
+import { activityLabels, calculateDiaryTotals, formatCalories, goalLabels } from "../utils/calorie";
 
 export function PlanScreen({
   plan,
   profile,
+  todayEntries,
 }: {
   plan: CalculatedPlan;
   profile: Profile;
+  todayEntries: DiaryEntry[];
 }) {
+  const consumed = calculateDiaryTotals(todayEntries);
+  const remainingCalories = Math.max(plan.targetCalories - consumed.calories, 0);
+
   return (
     <AppShell
-      eyebrow="Nutrition"
-      title="Персонален калориен план"
-      subtitle="Базирано на профила ти, целта и нивото на активност."
+      eyebrow="Home"
+      title="Начало и дневен калориен план"
+      subtitle="Виж основната си дневна цел, макросите и разпределението по хранения."
     >
       <GlassCard>
         <Text style={styles.heading}>Дневна калорийна цел</Text>
@@ -24,6 +29,18 @@ export function PlanScreen({
         <Text style={styles.caption}>
           {activityLabels[profile.activity]} • {goalLabels[profile.goal]}
         </Text>
+      </GlassCard>
+
+      <GlassCard>
+        <Text style={styles.sectionTitle}>Изядено днес</Text>
+        <View style={styles.metricsGrid}>
+          <MetricCard label="Калории" value={formatCalories(consumed.calories)} />
+          <MetricCard label="Остават" value={formatCalories(remainingCalories)} />
+          <MetricCard label="Протеин" value={`${Math.round(consumed.protein)} g`} />
+          <MetricCard label="Въглехидрати" value={`${Math.round(consumed.carbs)} g`} />
+          <MetricCard label="Мазнини" value={`${Math.round(consumed.fats)} g`} />
+          <MetricCard label="Храни" value={`${todayEntries.length}`} />
+        </View>
       </GlassCard>
 
       <GlassCard>

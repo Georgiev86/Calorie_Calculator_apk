@@ -75,6 +75,10 @@ export function AuthScreen({ app }: { app: AppStateShape }) {
             {app.isAuthLoading ? "Моля, изчакай..." : mode === "register" ? "Създай акаунт" : "Влез"}
           </Text>
         </TouchableOpacity>
+
+        <TouchableOpacity style={styles.secondaryButton} onPress={app.actions.enterOfflineMode}>
+          <Text style={styles.secondaryButtonText}>Продължи офлайн и пази данните на телефона</Text>
+        </TouchableOpacity>
       </GlassCard>
     </AppShell>
   );
@@ -145,5 +149,18 @@ const styles = StyleSheet.create({
     color: "#fff7eb",
     fontSize: 16,
     fontWeight: "800",
+  },
+  secondaryButton: {
+    backgroundColor: "#efe4d4",
+    borderRadius: 18,
+    paddingVertical: 15,
+    alignItems: "center",
+  },
+  secondaryButtonText: {
+    color: "#3d352b",
+    fontSize: 15,
+    fontWeight: "700",
+    textAlign: "center",
+    paddingHorizontal: 12,
   },
 });

@@ -18,6 +18,7 @@ export type ProgressEntry = {
   date: string;
   weight: number;
   note: string;
+  createdAt?: string;
 };
 
 export type ChatMessage = {
@@ -46,6 +47,45 @@ export type CloudSyncPayload = {
   progress: ProgressEntry[];
 };
 
+export type FoodItem = {
+  id: string;
+  name: string;
+  category: string;
+  serving: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+};
+
+export type RecipeItem = {
+  id: string;
+  name: string;
+  mealType: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+  ingredients: string[];
+};
+
+export type MealType = "Закуска" | "Обяд" | "Вечеря" | "Междинно";
+
+export type DiaryEntry = {
+  id: string;
+  foodId: string;
+  foodName: string;
+  mealType: MealType;
+  serving: string;
+  quantityGrams: number;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+  date: string;
+  createdAt: string;
+};
+
 export type CalculatedPlan = {
   bmr: number;
   maintenanceCalories: number;
@@ -64,10 +104,12 @@ export type AppStateShape = {
   isLoading: boolean;
   session: Session | null;
   user: User | null;
+  isOfflineMode: boolean;
   hasSavedProfile: boolean;
   parsedProfile: Profile | null;
   plan: CalculatedPlan | null;
   progressEntries: ProgressEntry[];
+  diaryEntries: DiaryEntry[];
   progressWeight: string;
   progressNote: string;
   chatInput: string;
@@ -76,6 +118,7 @@ export type AppStateShape = {
   isAuthLoading: boolean;
   authError: string;
   syncNotice: string;
+  exportNotice: string;
   fields: {
     gender: Gender;
     age: string;
@@ -102,6 +145,10 @@ export type AppStateShape = {
     saveProgressEntry: () => Promise<void>;
     handleCoachSend: (prefilled?: string) => Promise<void>;
     authenticate: (mode: "login" | "register", email: string, password: string) => Promise<boolean>;
+    enterOfflineMode: () => Promise<void>;
     logout: () => Promise<void>;
+    exportPdfReport: (period: "day" | "week") => Promise<void>;
+    addFoodToDiary: (food: FoodItem, mealType: MealType, quantityGrams: number) => Promise<void>;
+    removeDiaryEntry: (entryId: string) => Promise<void>;
   };
 };

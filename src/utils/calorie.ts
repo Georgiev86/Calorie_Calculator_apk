@@ -1,4 +1,4 @@
-import type { CalculatedPlan, ChatMessage, Profile, ProgressEntry } from "../types";
+import type { CalculatedPlan, ChatMessage, DiaryEntry, MealType, Profile, ProgressEntry } from "../types";
 
 export const activityMultipliers = {
   low: 1.2,
@@ -138,4 +138,61 @@ export function calculateWeightDelta(entries: ProgressEntry[]) {
   }
 
   return entries[0].weight - entries[entries.length - 1].weight;
+}
+
+export function formatDateLabel(dateString: string) {
+  const date = new Date(dateString);
+  return new Intl.DateTimeFormat("bg-BG", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
+export function getEntriesForPeriod(entries: ProgressEntry[], period: "day" | "week") {
+  const now = new Date();
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+
+  if (period === "week") {
+    start.setDate(start.getDate() - 6);
+  }
+
+  return entries.filter((entry) => {
+    const value = new Date(entry.createdAt ?? entry.date);
+    return value >= start && value <= now;
+  });
+}
+
+export function getTodayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export function getDiaryEntriesForDate(entries: DiaryEntry[], date = getTodayIsoDate()) {
+  return entries.filter((entry) => entry.date === date);
+}
+
+export function calculateDiaryTotals(entries: DiaryEntry[]) {
+  return entries.reduce(
+    (totals, entry) => ({
+      calories: totals.calories + entry.calories,
+      protein: totals.protein + entry.protein,
+      carbs: totals.carbs + entry.carbs,
+      fats: totals.fats + entry.fats,
+    }),
+    {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fats: 0,
+    }
+  );
+}
+
+export function getMealTypes(): MealType[] {
+  return ["Закуска", "Обяд", "Вечеря", "Междинно"];
+}
+
+export function scaleFoodToQuantity(quantityGrams: number, baseValue: number) {
+  return (baseValue * quantityGrams) / 100;
 }

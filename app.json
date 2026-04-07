@@ -11,6 +11,17 @@
     },
     "android": {
       "package": "com.dimitargeorgiev.caloriecoachbg"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "210df80a-68fd-438b-b643-fc9182ac9bff"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.dimitargeorgiev.caloriecoachbg",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     }
   }
 }

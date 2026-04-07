@@ -1,9 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { Profile, ProgressEntry, Session } from "../types";
+import type { DiaryEntry, Profile, ProgressEntry, Session } from "../types";
 
 const STORAGE_PROFILE_KEY = "calorie_coach_profile";
 const STORAGE_PROGRESS_KEY = "calorie_coach_progress";
 const STORAGE_SESSION_KEY = "calorie_coach_session";
+const STORAGE_OFFLINE_MODE_KEY = "calorie_coach_offline_mode";
+const STORAGE_DIARY_KEY = "calorie_coach_diary";
 
 export async function loadProfile() {
   const raw = await AsyncStorage.getItem(STORAGE_PROFILE_KEY);
@@ -18,6 +20,16 @@ export async function loadProgress() {
 export async function loadSession() {
   const raw = await AsyncStorage.getItem(STORAGE_SESSION_KEY);
   return raw ? (JSON.parse(raw) as Session) : null;
+}
+
+export async function loadOfflineMode() {
+  const raw = await AsyncStorage.getItem(STORAGE_OFFLINE_MODE_KEY);
+  return raw === "true";
+}
+
+export async function loadDiaryEntries() {
+  const raw = await AsyncStorage.getItem(STORAGE_DIARY_KEY);
+  return raw ? (JSON.parse(raw) as DiaryEntry[]) : [];
 }
 
 export async function persistProfile(profile: Profile) {
@@ -35,4 +47,12 @@ export async function persistSession(session: Session | null) {
   }
 
   await AsyncStorage.setItem(STORAGE_SESSION_KEY, JSON.stringify(session));
+}
+
+export async function persistOfflineMode(isOfflineMode: boolean) {
+  await AsyncStorage.setItem(STORAGE_OFFLINE_MODE_KEY, String(isOfflineMode));
+}
+
+export async function persistDiaryEntries(entries: DiaryEntry[]) {
+  await AsyncStorage.setItem(STORAGE_DIARY_KEY, JSON.stringify(entries));
 }

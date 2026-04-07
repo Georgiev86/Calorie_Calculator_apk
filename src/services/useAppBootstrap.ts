@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import type { ChatMessage, Profile, ProgressEntry, Session, User } from "../types";
+import type { ChatMessage, DiaryEntry, FoodItem, MealType, Profile, ProgressEntry, Session, User } from "../types";
 import { requestCoachReply } from "./coach";
 import { fetchCloudData, hasCloudBackend, loginWithCloud, registerWithCloud, syncCloudData } from "./cloud";
-import { loadProfile, loadProgress, loadSession, persistProfile, persistProgress, persistSession } from "./storage";
-import { calculatePlan, createDefaultChatMessages, isValidProfileInput, toNumber } from "../utils/calorie";
+import { exportProgressPdf } from "./pdf";
+import { loadDiaryEntries, loadOfflineMode, loadProfile, loadProgress, loadSession, persistDiaryEntries, persistOfflineMode, persistProfile, persistProgress, persistSession } from "./storage";
+import { calculatePlan, createDefaultChatMessages, getTodayIsoDate, isValidProfileInput, scaleFoodToQuantity, toNumber } from "../utils/calorie";
 
 export function useAppBootstrap() {
   const [isLoading, setIsLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
   const [hasSavedProfile, setHasSavedProfile] = useState(false);
   const [gender, setGender] = useState<Profile["gender"]>("male");
   const [age, setAge] = useState("30");
@@ -20,21 +22,27 @@ export function useAppBootstrap() {
   const [progressWeight, setProgressWeight] = useState("");
   const [progressNote, setProgressNote] = useState("");
   const [progressEntries, setProgressEntries] = useState<ProgressEntry[]>([]);
+  const [diaryEntries, setDiaryEntries] = useState<DiaryEntry[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(createDefaultChatMessages());
   const [isSending, setIsSending] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [syncNotice, setSyncNotice] = useState("");
+  const [exportNotice, setExportNotice] = useState("");
 
   useEffect(() => {
     async function bootstrap() {
       try {
-        const [storedProfile, storedProgress, storedSession] = await Promise.all([
+        const [storedProfile, storedProgress, storedSession, storedOfflineMode, storedDiaryEntries] = await Promise.all([
           loadProfile(),
           loadProgress(),
           loadSession(),
+          loadOfflineMode(),
+          loadDiaryEntries(),
         ]);
+
+        setIsOfflineMode(storedOfflineMode);
 
         if (storedProfile) {
           hydrateProfile(storedProfile);
@@ -42,6 +50,7 @@ export function useAppBootstrap() {
         }
 
         setProgressEntries(storedProgress);
+        setDiaryEntries(storedDiaryEntries);
 
         if (storedSession) {
           setSession(storedSession);
@@ -142,6 +151,7 @@ export function useAppBootstrap() {
       date: new Date().toISOString().slice(0, 10),
       weight: numericWeight,
       note: progressNote.trim(),
+      createdAt: new Date().toISOString(),
     };
 
     const updatedEntries = [entry, ...progressEntries];
@@ -211,7 +221,9 @@ export function useAppBootstrap() {
 
       setSession(nextSession);
       setUser(nextSession.user);
+      setIsOfflineMode(false);
       await persistSession(nextSession);
+      await persistOfflineMode(false);
 
       if (parsedProfile || progressEntries.length > 0) {
         await syncIfPossible(parsedProfile, progressEntries, nextSession.token);
@@ -242,10 +254,91 @@ export function useAppBootstrap() {
     }
   }
 
+  async function enterOfflineMode() {
+    setSession({
+      token: "offline-local-session",
+      user: {
+        id: "local-user",
+        email: "offline@local.device",
+      },
+    });
+    setUser({
+      id: "local-user",
+      email: "offline@local.device",
+    });
+    setIsOfflineMode(true);
+    setAuthError("");
+    setSyncNotice("Работиш в локален режим. Данните се пазят на телефона.");
+    await persistSession({
+      token: "offline-local-session",
+      user: {
+        id: "local-user",
+        email: "offline@local.device",
+      },
+    });
+    await persistOfflineMode(true);
+  }
+
+  async function exportPdfReport(period: "day" | "week") {
+    if (!parsedProfile) {
+      setExportNotice("Първо запази профил, за да изнесем PDF отчет.");
+      return;
+    }
+
+    try {
+      const result = await exportProgressPdf({
+        period,
+        profile: parsedProfile,
+        entries: progressEntries,
+      });
+      const label = period === "day" ? "дневният" : "седмичният";
+      setExportNotice(
+        result.filteredEntries.length
+          ? `PDF е готов и може да бъде споделен. Изнесен е ${label} отчет.`
+          : `PDF е създаден без записи за периода. Можеш да го споделиш или пазиш на телефона.`
+      );
+    } catch {
+      setExportNotice("Не успях да създам PDF отчета в момента.");
+    }
+  }
+
+  async function addFoodToDiary(food: FoodItem, mealType: MealType, quantityGrams: number) {
+    const grams = quantityGrams > 0 ? quantityGrams : 100;
+
+    const entry: DiaryEntry = {
+      id: `${Date.now()}-${food.id}`,
+      foodId: food.id,
+      foodName: food.name,
+      mealType,
+      serving: `${grams} г`,
+      quantityGrams: grams,
+      calories: scaleFoodToQuantity(grams, food.calories),
+      protein: scaleFoodToQuantity(grams, food.protein),
+      carbs: scaleFoodToQuantity(grams, food.carbs),
+      fats: scaleFoodToQuantity(grams, food.fats),
+      date: getTodayIsoDate(),
+      createdAt: new Date().toISOString(),
+    };
+
+    const nextEntries = [entry, ...diaryEntries];
+    setDiaryEntries(nextEntries);
+    await persistDiaryEntries(nextEntries);
+    setSyncNotice(`${food.name} е добавена към ${mealType.toLowerCase()} (${grams} г).`);
+  }
+
+  async function removeDiaryEntry(entryId: string) {
+    const nextEntries = diaryEntries.filter((entry) => entry.id !== entryId);
+    setDiaryEntries(nextEntries);
+    await persistDiaryEntries(nextEntries);
+    setSyncNotice("Записът е премахнат от дневните хранения.");
+  }
+
   async function logout() {
     setSession(null);
     setUser(null);
+    setIsOfflineMode(false);
     await persistSession(null);
+    await persistOfflineMode(false);
     setSyncNotice("Сесията е изчистена. Локалните данни са запазени на устройството.");
   }
 
@@ -253,10 +346,12 @@ export function useAppBootstrap() {
     isLoading,
     session,
     user,
+    isOfflineMode,
     hasSavedProfile,
     parsedProfile,
     plan,
     progressEntries,
+    diaryEntries,
     progressWeight,
     progressNote,
     chatInput,
@@ -265,6 +360,7 @@ export function useAppBootstrap() {
     isAuthLoading,
     authError,
     syncNotice,
+    exportNotice,
     fields: {
       gender,
       age,
@@ -291,7 +387,11 @@ export function useAppBootstrap() {
       saveProgressEntry,
       handleCoachSend,
       authenticate,
+      enterOfflineMode,
       logout,
+      exportPdfReport,
+      addFoodToDiary,
+      removeDiaryEntry,
     },
   };
 }

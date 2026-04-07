@@ -7,15 +7,19 @@ import { hasCloudBackend } from "../services/cloud";
 export function ProfileScreen({ app }: { app: AppStateShape }) {
   return (
     <AppShell
-      eyebrow="Account"
-      title="Акаунт и синхронизация"
-      subtitle="Тук виждаш кой е логнат, дали cloud sync е активен и можеш да излезеш от сесията."
+      eyebrow="Settings"
+      title="Настройки и акаунт"
+      subtitle="Тук виждаш режима на работа, профила и дали използваш cloud или локално запазване."
     >
       <GlassCard>
         <Text style={styles.sectionTitle}>Потребител</Text>
         <Text style={styles.info}>{app.user?.email ?? "Няма активен потребител"}</Text>
         <Text style={styles.badge}>
-          {hasCloudBackend() ? "Cloud backend: свързан" : "Cloud backend: липсва URL"}
+          {app.isOfflineMode
+            ? "Режим: локално на телефона"
+            : hasCloudBackend()
+              ? "Cloud backend: свързан"
+              : "Cloud backend: липсва URL"}
         </Text>
         {app.syncNotice ? <Text style={styles.notice}>{app.syncNotice}</Text> : null}
       </GlassCard>

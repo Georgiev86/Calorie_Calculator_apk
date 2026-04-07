@@ -1,0 +1,62 @@
+import type { FoodItem, RecipeItem } from "../types";
+
+export const foodDatabase: FoodItem[] = [
+  { id: "oats", name: "Овесени ядки", category: "Закуска", serving: "100 г", calories: 389, protein: 16.9, carbs: 66.3, fats: 6.9 },
+  { id: "eggs", name: "Яйца", category: "Протеини", serving: "100 г", calories: 143, protein: 12.6, carbs: 0.7, fats: 9.5 },
+  { id: "chicken", name: "Пилешко филе", category: "Протеини", serving: "100 г", calories: 165, protein: 31, carbs: 0, fats: 3.6 },
+  { id: "rice", name: "Ориз сварен", category: "Въглехидрати", serving: "100 г", calories: 130, protein: 2.7, carbs: 28.2, fats: 0.3 },
+  { id: "potatoes", name: "Картофи варени", category: "Въглехидрати", serving: "100 г", calories: 87, protein: 1.9, carbs: 20.1, fats: 0.1 },
+  { id: "yogurt", name: "Кисело мляко 2%", category: "Млечни", serving: "100 г", calories: 61, protein: 4.3, carbs: 4.7, fats: 2.0 },
+  { id: "cottage", name: "Извара", category: "Млечни", serving: "100 г", calories: 98, protein: 11.1, carbs: 3.4, fats: 4.3 },
+  { id: "banana", name: "Банан", category: "Плодове", serving: "100 г", calories: 89, protein: 1.1, carbs: 22.8, fats: 0.3 },
+  { id: "apple", name: "Ябълка", category: "Плодове", serving: "100 г", calories: 52, protein: 0.3, carbs: 13.8, fats: 0.2 },
+  { id: "salmon", name: "Сьомга", category: "Протеини", serving: "100 г", calories: 208, protein: 20, carbs: 0, fats: 13 },
+  { id: "cheese", name: "Сирене", category: "Млечни", serving: "100 г", calories: 264, protein: 14.2, carbs: 3.1, fats: 21.3 },
+  { id: "beans", name: "Боб сварен", category: "Бобови", serving: "100 г", calories: 127, protein: 8.7, carbs: 22.8, fats: 0.5 },
+  { id: "lentils", name: "Леща сварена", category: "Бобови", serving: "100 г", calories: 116, protein: 9, carbs: 20.1, fats: 0.4 },
+  { id: "almonds", name: "Бадеми", category: "Мазнини", serving: "100 г", calories: 579, protein: 21.2, carbs: 21.7, fats: 49.9 },
+  { id: "olive-oil", name: "Зехтин", category: "Мазнини", serving: "100 г", calories: 884, protein: 0, carbs: 0, fats: 100 },
+];
+
+export const recipeDatabase: RecipeItem[] = [
+  {
+    id: "protein-breakfast",
+    name: "Протеинова закуска",
+    mealType: "Закуска",
+    calories: 430,
+    protein: 29,
+    carbs: 42,
+    fats: 15,
+    ingredients: ["Овесени ядки", "Кисело мляко", "Банан", "Яйца"],
+  },
+  {
+    id: "chicken-rice",
+    name: "Пиле с ориз и салата",
+    mealType: "Обяд",
+    calories: 610,
+    protein: 44,
+    carbs: 58,
+    fats: 18,
+    ingredients: ["Пилешко филе", "Ориз", "Зехтин", "Зелена салата"],
+  },
+  {
+    id: "salmon-potato",
+    name: "Сьомга с картофи",
+    mealType: "Вечеря",
+    calories: 540,
+    protein: 36,
+    carbs: 34,
+    fats: 28,
+    ingredients: ["Сьомга", "Картофи", "Зехтин"],
+  },
+  {
+    id: "lentil-bowl",
+    name: "Леща bowl",
+    mealType: "Обяд",
+    calories: 390,
+    protein: 21,
+    carbs: 46,
+    fats: 11,
+    ingredients: ["Леща", "Кисело мляко", "Зеленчуци", "Зехтин"],
+  },
+];

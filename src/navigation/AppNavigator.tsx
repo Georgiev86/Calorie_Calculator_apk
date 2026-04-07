@@ -5,10 +5,12 @@ import { Text, TouchableOpacity } from "react-native";
 import { AuthScreen } from "../screens/AuthScreen";
 import { OnboardingScreen } from "../screens/OnboardingScreen";
 import { PlanScreen } from "../screens/PlanScreen";
-import { CoachScreen } from "../screens/CoachScreen";
 import { ProgressScreen } from "../screens/ProgressScreen";
+import { FoodsScreen } from "../screens/FoodsScreen";
+import { RecipesScreen } from "../screens/RecipesScreen";
 import { ProfileScreen } from "../screens/ProfileScreen";
 import type { AppStateShape } from "../types";
+import { getDiaryEntriesForDate } from "../utils/calorie";
 
 const Stack = createNativeStackNavigator();
 const Tabs = createBottomTabNavigator();
@@ -26,6 +28,8 @@ const theme = {
 };
 
 function MainTabs({ app }: { app: AppStateShape }) {
+  const todayEntries = getDiaryEntriesForDate(app.diaryEntries);
+
   return (
     <Tabs.Navigator
       screenOptions={{
@@ -41,35 +45,33 @@ function MainTabs({ app }: { app: AppStateShape }) {
         tabBarInactiveTintColor: "#c7d2c5",
       }}
     >
-      <Tabs.Screen name="Plan">
-        {() => <PlanScreen plan={app.plan!} profile={app.parsedProfile!} />}
+      <Tabs.Screen name="Начало">
+        {() => <PlanScreen plan={app.plan!} profile={app.parsedProfile!} todayEntries={todayEntries} />}
       </Tabs.Screen>
-      <Tabs.Screen name="Coach">
-        {() => (
-          <CoachScreen
-            chatInput={app.chatInput}
-            chatMessages={app.chatMessages}
-            isSending={app.isSending}
-            onChatInputChange={app.setters.setChatInput}
-            onSend={app.actions.handleCoachSend}
-            syncNotice={app.syncNotice}
-          />
-        )}
-      </Tabs.Screen>
-      <Tabs.Screen name="Progress">
+      <Tabs.Screen name="История">
         {() => (
           <ProgressScreen
             entries={app.progressEntries}
+            todayEntries={todayEntries}
             progressNote={app.progressNote}
             progressWeight={app.progressWeight}
+            exportNotice={app.exportNotice}
             onProgressNoteChange={app.setters.setProgressNote}
             onProgressWeightChange={app.setters.setProgressWeight}
             onSaveEntry={app.actions.saveProgressEntry}
+            onExportPdf={app.actions.exportPdfReport}
+            onRemoveDiaryEntry={app.actions.removeDiaryEntry}
             targetWeightContext={app.progressEntries[0]?.weight ?? app.parsedProfile!.weight}
           />
         )}
       </Tabs.Screen>
-      <Tabs.Screen name="Profile">
+      <Tabs.Screen name="Храни">
+        {() => <FoodsScreen app={app} />}
+      </Tabs.Screen>
+      <Tabs.Screen name="Рецепти">
+        {() => <RecipesScreen />}
+      </Tabs.Screen>
+      <Tabs.Screen name="Настройки">
         {() => <ProfileScreen app={app} />}
       </Tabs.Screen>
     </Tabs.Navigator>
@@ -78,6 +80,7 @@ function MainTabs({ app }: { app: AppStateShape }) {
 
 export function AppNavigator({ app }: { app: AppStateShape }) {
   const hasProfile = app.hasSavedProfile && Boolean(app.parsedProfile);
+  const hasSession = Boolean(app.session);
 
   return (
     <NavigationContainer theme={theme}>
@@ -95,7 +98,7 @@ export function AppNavigator({ app }: { app: AppStateShape }) {
           },
         }}
       >
-        {!app.session ? (
+        {!hasSession ? (
           <Stack.Screen
             name="Auth"
             options={{ headerShown: false }}
