@@ -46,13 +46,13 @@ function MainTabs({ app }: { app: AppStateShape }) {
       }}
     >
       <Tabs.Screen name="Начало">
-        {() => <PlanScreen plan={app.plan!} profile={app.parsedProfile!} todayEntries={todayEntries} />}
+        {() => <PlanScreen plan={app.plan!} profile={app.parsedProfile!} todayEntries={todayEntries} app={app} />}
       </Tabs.Screen>
       <Tabs.Screen name="История">
         {() => (
           <ProgressScreen
             entries={app.progressEntries}
-            todayEntries={todayEntries}
+            diaryEntries={app.diaryEntries}
             progressNote={app.progressNote}
             progressWeight={app.progressWeight}
             exportNotice={app.exportNotice}
@@ -61,6 +61,7 @@ function MainTabs({ app }: { app: AppStateShape }) {
             onSaveEntry={app.actions.saveProgressEntry}
             onExportPdf={app.actions.exportPdfReport}
             onRemoveDiaryEntry={app.actions.removeDiaryEntry}
+            onUpdateDiaryEntry={app.actions.updateDiaryEntry}
             targetWeightContext={app.progressEntries[0]?.weight ?? app.parsedProfile!.weight}
           />
         )}
@@ -69,7 +70,7 @@ function MainTabs({ app }: { app: AppStateShape }) {
         {() => <FoodsScreen app={app} />}
       </Tabs.Screen>
       <Tabs.Screen name="Рецепти">
-        {() => <RecipesScreen />}
+        {() => <RecipesScreen app={app} />}
       </Tabs.Screen>
       <Tabs.Screen name="Настройки">
         {() => <ProfileScreen app={app} />}

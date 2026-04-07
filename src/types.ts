@@ -56,6 +56,7 @@ export type FoodItem = {
   protein: number;
   carbs: number;
   fats: number;
+  isCustom?: boolean;
 };
 
 export type RecipeItem = {
@@ -67,6 +68,7 @@ export type RecipeItem = {
   carbs: number;
   fats: number;
   ingredients: string[];
+  isCustom?: boolean;
 };
 
 export type MealType = "Закуска" | "Обяд" | "Вечеря" | "Междинно";
@@ -100,6 +102,11 @@ export type CalculatedPlan = {
   }>;
 };
 
+export type WaterEntry = {
+  date: string;
+  glasses: number;
+};
+
 export type AppStateShape = {
   isLoading: boolean;
   session: Session | null;
@@ -110,6 +117,11 @@ export type AppStateShape = {
   plan: CalculatedPlan | null;
   progressEntries: ProgressEntry[];
   diaryEntries: DiaryEntry[];
+  customFoods: FoodItem[];
+  customRecipes: RecipeItem[];
+  favoriteFoodIds: string[];
+  recentFoodIds: string[];
+  waterEntries: WaterEntry[];
   progressWeight: string;
   progressNote: string;
   chatInput: string;
@@ -150,5 +162,12 @@ export type AppStateShape = {
     exportPdfReport: (period: "day" | "week") => Promise<void>;
     addFoodToDiary: (food: FoodItem, mealType: MealType, quantityGrams: number) => Promise<void>;
     removeDiaryEntry: (entryId: string) => Promise<void>;
+    updateDiaryEntry: (entryId: string, updates: { mealType: MealType; quantityGrams: number }) => Promise<void>;
+    addCustomFood: (food: Omit<FoodItem, "id">) => Promise<void>;
+    toggleFavoriteFood: (foodId: string) => Promise<void>;
+    incrementWater: () => Promise<void>;
+    decrementWater: () => Promise<void>;
+    addCustomRecipe: (recipe: Omit<RecipeItem, "id">) => Promise<void>;
+    addRecipeToDiary: (recipe: RecipeItem, mealType: MealType) => Promise<void>;
   };
 };

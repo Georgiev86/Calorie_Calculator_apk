@@ -51,7 +51,7 @@ export const recipeDatabase: RecipeItem[] = [
   },
   {
     id: "lentil-bowl",
-    name: "Леща bowl",
+    name: "Леща сварена",
     mealType: "Обяд",
     calories: 390,
     protein: 21,

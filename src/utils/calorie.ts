@@ -1,4 +1,4 @@
-import type { CalculatedPlan, ChatMessage, DiaryEntry, MealType, Profile, ProgressEntry } from "../types";
+import type { CalculatedPlan, ChatMessage, DiaryEntry, MealType, Profile, ProgressEntry, WaterEntry } from "../types";
 
 export const activityMultipliers = {
   low: 1.2,
@@ -195,4 +195,27 @@ export function getMealTypes(): MealType[] {
 
 export function scaleFoodToQuantity(quantityGrams: number, baseValue: number) {
   return (baseValue * quantityGrams) / 100;
+}
+
+export function groupDiaryEntriesByMeal(entries: DiaryEntry[]) {
+  const groups: Record<MealType, DiaryEntry[]> = {
+    "Закуска": [],
+    "Обяд": [],
+    "Вечеря": [],
+    "Междинно": [],
+  };
+
+  entries.forEach((entry) => {
+    groups[entry.mealType].push(entry);
+  });
+
+  return groups;
+}
+
+export function getWaterForDate(entries: WaterEntry[], date = getTodayIsoDate()) {
+  return entries.find((entry) => entry.date === date)?.glasses ?? 0;
+}
+
+export function getAvailableDiaryDates(entries: DiaryEntry[]) {
+  return [...new Set(entries.map((entry) => entry.date))].sort((a, b) => b.localeCompare(a));
 }

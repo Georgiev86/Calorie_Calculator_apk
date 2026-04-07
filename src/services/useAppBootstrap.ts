@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import type { ChatMessage, DiaryEntry, FoodItem, MealType, Profile, ProgressEntry, Session, User } from "../types";
+import type { ChatMessage, DiaryEntry, FoodItem, MealType, Profile, ProgressEntry, RecipeItem, Session, User, WaterEntry } from "../types";
 import { requestCoachReply } from "./coach";
 import { fetchCloudData, hasCloudBackend, loginWithCloud, registerWithCloud, syncCloudData } from "./cloud";
 import { exportProgressPdf } from "./pdf";
-import { loadDiaryEntries, loadOfflineMode, loadProfile, loadProgress, loadSession, persistDiaryEntries, persistOfflineMode, persistProfile, persistProgress, persistSession } from "./storage";
-import { calculatePlan, createDefaultChatMessages, getTodayIsoDate, isValidProfileInput, scaleFoodToQuantity, toNumber } from "../utils/calorie";
+import { loadCustomFoods, loadCustomRecipes, loadDiaryEntries, loadFavoriteFoodIds, loadOfflineMode, loadProfile, loadProgress, loadRecentFoodIds, loadSession, loadWaterEntries, persistCustomFoods, persistCustomRecipes, persistDiaryEntries, persistFavoriteFoodIds, persistOfflineMode, persistProfile, persistProgress, persistRecentFoodIds, persistSession, persistWaterEntries } from "./storage";
+import { calculatePlan, createDefaultChatMessages, getTodayIsoDate, getWaterForDate, isValidProfileInput, scaleFoodToQuantity, toNumber } from "../utils/calorie";
 
 export function useAppBootstrap() {
   const [isLoading, setIsLoading] = useState(true);
@@ -23,6 +23,11 @@ export function useAppBootstrap() {
   const [progressNote, setProgressNote] = useState("");
   const [progressEntries, setProgressEntries] = useState<ProgressEntry[]>([]);
   const [diaryEntries, setDiaryEntries] = useState<DiaryEntry[]>([]);
+  const [customFoods, setCustomFoods] = useState<FoodItem[]>([]);
+  const [customRecipes, setCustomRecipes] = useState<RecipeItem[]>([]);
+  const [favoriteFoodIds, setFavoriteFoodIds] = useState<string[]>([]);
+  const [recentFoodIds, setRecentFoodIds] = useState<string[]>([]);
+  const [waterEntries, setWaterEntries] = useState<WaterEntry[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(createDefaultChatMessages());
   const [isSending, setIsSending] = useState(false);
@@ -34,12 +39,28 @@ export function useAppBootstrap() {
   useEffect(() => {
     async function bootstrap() {
       try {
-        const [storedProfile, storedProgress, storedSession, storedOfflineMode, storedDiaryEntries] = await Promise.all([
+        const [
+          storedProfile,
+          storedProgress,
+          storedSession,
+          storedOfflineMode,
+          storedDiaryEntries,
+          storedCustomFoods,
+          storedFavoriteFoodIds,
+          storedRecentFoodIds,
+          storedWaterEntries,
+          storedCustomRecipes,
+        ] = await Promise.all([
           loadProfile(),
           loadProgress(),
           loadSession(),
           loadOfflineMode(),
           loadDiaryEntries(),
+          loadCustomFoods(),
+          loadFavoriteFoodIds(),
+          loadRecentFoodIds(),
+          loadWaterEntries(),
+          loadCustomRecipes(),
         ]);
 
         setIsOfflineMode(storedOfflineMode);
@@ -51,6 +72,11 @@ export function useAppBootstrap() {
 
         setProgressEntries(storedProgress);
         setDiaryEntries(storedDiaryEntries);
+        setCustomFoods(storedCustomFoods);
+        setFavoriteFoodIds(storedFavoriteFoodIds);
+        setRecentFoodIds(storedRecentFoodIds);
+        setWaterEntries(storedWaterEntries);
+        setCustomRecipes(storedCustomRecipes);
 
         if (storedSession) {
           setSession(storedSession);
@@ -323,6 +349,9 @@ export function useAppBootstrap() {
     const nextEntries = [entry, ...diaryEntries];
     setDiaryEntries(nextEntries);
     await persistDiaryEntries(nextEntries);
+    const nextRecentIds = [food.id, ...recentFoodIds.filter((id) => id !== food.id)].slice(0, 12);
+    setRecentFoodIds(nextRecentIds);
+    await persistRecentFoodIds(nextRecentIds);
     setSyncNotice(`${food.name} е добавена към ${mealType.toLowerCase()} (${grams} г).`);
   }
 
@@ -331,6 +360,123 @@ export function useAppBootstrap() {
     setDiaryEntries(nextEntries);
     await persistDiaryEntries(nextEntries);
     setSyncNotice("Записът е премахнат от дневните хранения.");
+  }
+
+  async function updateDiaryEntry(
+    entryId: string,
+    updates: { mealType: MealType; quantityGrams: number }
+  ) {
+    const grams = updates.quantityGrams > 0 ? updates.quantityGrams : 100;
+
+    const nextEntries = diaryEntries.map((entry) => {
+      if (entry.id !== entryId) {
+        return entry;
+      }
+
+      const scaleRatio = grams / entry.quantityGrams;
+
+      return {
+        ...entry,
+        mealType: updates.mealType,
+        quantityGrams: grams,
+        serving: `${grams} г`,
+        calories: entry.calories * scaleRatio,
+        protein: entry.protein * scaleRatio,
+        carbs: entry.carbs * scaleRatio,
+        fats: entry.fats * scaleRatio,
+      };
+    });
+
+    setDiaryEntries(nextEntries);
+    await persistDiaryEntries(nextEntries);
+    setSyncNotice("Записът е обновен.");
+  }
+
+  async function addCustomFood(food: Omit<FoodItem, "id">) {
+    const nextFood: FoodItem = {
+      ...food,
+      id: `custom-${Date.now()}`,
+      isCustom: true,
+    };
+
+    const nextCustomFoods = [nextFood, ...customFoods];
+    setCustomFoods(nextCustomFoods);
+    await persistCustomFoods(nextCustomFoods);
+    setSyncNotice(`${food.name} е добавена към твоите храни.`);
+  }
+
+  async function toggleFavoriteFood(foodId: string) {
+    const isFavorite = favoriteFoodIds.includes(foodId);
+    const nextFavoriteIds = isFavorite
+      ? favoriteFoodIds.filter((id) => id !== foodId)
+      : [foodId, ...favoriteFoodIds];
+
+    setFavoriteFoodIds(nextFavoriteIds);
+    await persistFavoriteFoodIds(nextFavoriteIds);
+    setSyncNotice(isFavorite ? "Храната е махната от любими." : "Храната е добавена в любими.");
+  }
+
+  async function incrementWater() {
+    const today = getTodayIsoDate();
+    const currentGlasses = getWaterForDate(waterEntries, today);
+    const nextEntries = upsertWaterEntry(today, currentGlasses + 1);
+    setWaterEntries(nextEntries);
+    await persistWaterEntries(nextEntries);
+    setSyncNotice("Добавена е 1 чаша вода.");
+  }
+
+  async function decrementWater() {
+    const today = getTodayIsoDate();
+    const currentGlasses = getWaterForDate(waterEntries, today);
+    const nextEntries = upsertWaterEntry(today, Math.max(currentGlasses - 1, 0));
+    setWaterEntries(nextEntries);
+    await persistWaterEntries(nextEntries);
+    setSyncNotice("Намалена е 1 чаша вода.");
+  }
+
+  function upsertWaterEntry(date: string, glasses: number) {
+    const hasEntry = waterEntries.some((entry) => entry.date === date);
+
+    if (hasEntry) {
+      return waterEntries.map((entry) => (entry.date === date ? { ...entry, glasses } : entry));
+    }
+
+    return [{ date, glasses }, ...waterEntries];
+  }
+
+  async function addCustomRecipe(recipe: Omit<RecipeItem, "id">) {
+    const nextRecipe: RecipeItem = {
+      ...recipe,
+      id: `custom-recipe-${Date.now()}`,
+      isCustom: true,
+    };
+
+    const nextRecipes = [nextRecipe, ...customRecipes];
+    setCustomRecipes(nextRecipes);
+    await persistCustomRecipes(nextRecipes);
+    setSyncNotice(`${recipe.name} е добавена към моите рецепти.`);
+  }
+
+  async function addRecipeToDiary(recipe: RecipeItem, mealType: MealType) {
+    const entry: DiaryEntry = {
+      id: `${Date.now()}-${recipe.id}`,
+      foodId: recipe.id,
+      foodName: recipe.name,
+      mealType,
+      serving: "1 порция",
+      quantityGrams: 100,
+      calories: recipe.calories,
+      protein: recipe.protein,
+      carbs: recipe.carbs,
+      fats: recipe.fats,
+      date: getTodayIsoDate(),
+      createdAt: new Date().toISOString(),
+    };
+
+    const nextEntries = [entry, ...diaryEntries];
+    setDiaryEntries(nextEntries);
+    await persistDiaryEntries(nextEntries);
+    setSyncNotice(`${recipe.name} е добавена към ${mealType.toLowerCase()}.`);
   }
 
   async function logout() {
@@ -352,6 +498,11 @@ export function useAppBootstrap() {
     plan,
     progressEntries,
     diaryEntries,
+    customFoods,
+    customRecipes,
+    favoriteFoodIds,
+    recentFoodIds,
+    waterEntries,
     progressWeight,
     progressNote,
     chatInput,
@@ -392,6 +543,13 @@ export function useAppBootstrap() {
       exportPdfReport,
       addFoodToDiary,
       removeDiaryEntry,
+      updateDiaryEntry,
+      addCustomFood,
+      toggleFavoriteFood,
+      incrementWater,
+      decrementWater,
+      addCustomRecipe,
+      addRecipeToDiary,
     },
   };
 }

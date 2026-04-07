@@ -1,21 +1,29 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AppShell } from "../components/AppShell";
 import { GlassCard } from "../components/GlassCard";
 import { MetricCard } from "../components/MetricCard";
-import type { CalculatedPlan, DiaryEntry, Profile } from "../types";
-import { activityLabels, calculateDiaryTotals, formatCalories, goalLabels } from "../utils/calorie";
+import { foodDatabase } from "../data/foods";
+import type { AppStateShape, CalculatedPlan, DiaryEntry, Profile } from "../types";
+import { activityLabels, calculateDiaryTotals, formatCalories, getWaterForDate, goalLabels, groupDiaryEntriesByMeal } from "../utils/calorie";
 
 export function PlanScreen({
   plan,
   profile,
   todayEntries,
+  app,
 }: {
   plan: CalculatedPlan;
   profile: Profile;
   todayEntries: DiaryEntry[];
+  app: AppStateShape;
 }) {
   const consumed = calculateDiaryTotals(todayEntries);
   const remainingCalories = Math.max(plan.targetCalories - consumed.calories, 0);
+  const mealGroups = groupDiaryEntriesByMeal(todayEntries);
+  const todayWater = getWaterForDate(app.waterEntries);
+  const favoriteFoods = [...app.customFoods, ...foodDatabase].filter((food) =>
+    app.favoriteFoodIds.includes(food.id)
+  );
 
   return (
     <AppShell
@@ -44,6 +52,24 @@ export function PlanScreen({
       </GlassCard>
 
       <GlassCard>
+        <Text style={styles.sectionTitle}>Вода и навици</Text>
+        <View style={styles.waterRow}>
+          <View>
+            <Text style={styles.waterValue}>{todayWater} чаши</Text>
+            <Text style={styles.mealMeta}>Цел: 8 чаши за деня</Text>
+          </View>
+          <View style={styles.waterButtons}>
+            <TouchableOpacity style={styles.waterButtonSecondary} onPress={app.actions.decrementWater}>
+              <Text style={styles.waterButtonSecondaryText}>-1</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.waterButton} onPress={app.actions.incrementWater}>
+              <Text style={styles.waterButtonText}>+1 чаша</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </GlassCard>
+
+      <GlassCard>
         <Text style={styles.sectionTitle}>Макроси и метрики</Text>
         <View style={styles.metricsGrid}>
           <MetricCard label="BMR" value={formatCalories(plan.bmr)} />
@@ -66,6 +92,47 @@ export function PlanScreen({
           ))}
         </View>
       </GlassCard>
+
+      <GlassCard>
+        <Text style={styles.sectionTitle}>Дневен статус по хранения</Text>
+        <View style={styles.mealList}>
+          {Object.entries(mealGroups).map(([mealType, entries]) => {
+            const totals = calculateDiaryTotals(entries);
+            return (
+              <View key={mealType} style={styles.mealItem}>
+                <View>
+                  <Text style={styles.mealName}>{mealType}</Text>
+                  <Text style={styles.mealMeta}>{entries.length} храни</Text>
+                </View>
+                <View>
+                  <Text style={styles.mealCalories}>{Math.round(totals.calories)} kcal</Text>
+                  <Text style={styles.mealMeta}>
+                    П {Math.round(totals.protein)} • В {Math.round(totals.carbs)} • М {Math.round(totals.fats)}
+                  </Text>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      </GlassCard>
+
+      {favoriteFoods.length ? (
+        <GlassCard>
+          <Text style={styles.sectionTitle}>Любими храни за бързо добавяне</Text>
+          <View style={styles.quickFoodsWrap}>
+            {favoriteFoods.slice(0, 6).map((food) => (
+              <TouchableOpacity
+                key={food.id}
+                style={styles.quickFoodChip}
+                onPress={() => app.actions.addFoodToDiary(food, "Междинно", 100)}
+              >
+                <Text style={styles.quickFoodTitle}>{food.name}</Text>
+                <Text style={styles.quickFoodMeta}>{food.calories} kcal</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </GlassCard>
+      ) : null}
     </AppShell>
   );
 }
@@ -112,5 +179,65 @@ const styles = StyleSheet.create({
   mealCalories: {
     color: "#c15e2d",
     fontWeight: "800",
+  },
+  mealMeta: {
+    color: "#7a6a58",
+    fontSize: 13,
+    marginTop: 4,
+  },
+  waterRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+  },
+  waterValue: {
+    color: "#17372b",
+    fontSize: 30,
+    fontWeight: "900",
+  },
+  waterButtons: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  waterButton: {
+    backgroundColor: "#10281f",
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  waterButtonText: {
+    color: "#fff7eb",
+    fontWeight: "800",
+  },
+  waterButtonSecondary: {
+    backgroundColor: "#efe4d4",
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  waterButtonSecondaryText: {
+    color: "#43372b",
+    fontWeight: "800",
+  },
+  quickFoodsWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  quickFoodChip: {
+    width: "48%",
+    backgroundColor: "#f8efdf",
+    borderRadius: 18,
+    padding: 14,
+  },
+  quickFoodTitle: {
+    color: "#392f25",
+    fontWeight: "800",
+    marginBottom: 4,
+  },
+  quickFoodMeta: {
+    color: "#7a6a58",
+    fontSize: 13,
   },
 });
