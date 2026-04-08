@@ -1,8 +1,9 @@
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TextInput, TouchableOpacity, View,Linking } from "react-native";
 import { AppShell } from "../components/AppShell";
 import { GlassCard } from "../components/GlassCard";
 import { SelectChips } from "../components/SelectChips";
 import type { AppStateShape } from "../types";
+
 
 export function OnboardingScreen({ app }: { app: AppStateShape }) {
   const { fields, setters, parsedProfile, actions, syncNotice } = app;
@@ -25,6 +26,22 @@ export function OnboardingScreen({ app }: { app: AppStateShape }) {
             { label: "Жена", value: "female" },
           ]}
         />
+
+      {/* Секция за PDF Планер - Винаги видима */}
+      <View style={styles.pdfContainer}>
+        <TouchableOpacity
+          style={styles.pdfButton}
+         onPress={() => Linking.openURL('https://fitnesudoma.com/wp-content/uploads/2026/04/fitplan.pdf')}
+        >
+          <View style={styles.pdfContent}>
+            <Text style={styles.pdfIcon}>📂</Text>
+            <View>
+              <Text style={styles.pdfTitle}>Планер за напредък </Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </View>
+
 
         <View style={styles.row}>
           <Field label="Възраст" value={fields.age} onChange={setters.setAge} />
@@ -143,4 +160,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "800",
   },
+    pdfContainer: {
+      marginVertical: 15,
+    },
+    pdfButton: {
+      backgroundColor: "rgba(255, 255, 255, 0.5)", // Леко прозрачен фон
+      borderRadius: 18,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: "#ead9c0",
+      borderStyle: "dashed", // Подчертава, че е файл/ресурс
+    },
+    pdfContent: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 15,
+    },
+    pdfIcon: {
+      fontSize: 24,
+    },
+    pdfTitle: {
+      color: "#10281f",
+      fontWeight: "800",
+      fontSize: 15,
+    },
+    pdfSubtitle: {
+      color: "#9d937f",
+      fontSize: 12,
+    },
+
 });
