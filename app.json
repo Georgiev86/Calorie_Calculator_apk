@@ -10,7 +10,11 @@
       "backgroundColor": "#f4efe6"
     },
     "android": {
-      "package": "com.dimitargeorgiev.caloriecoachbg"
+      "package": "com.dimitargeorgiev.caloriecoachbg",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/fitness-icon.png",
+        "backgroundColor": "#ffffff"
+      }
     },
     "extra": {
       "eas": {
@@ -22,6 +26,9 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
-    }
+    },
+    "plugins": [
+      "expo-asset"
+    ]
   }
 }
